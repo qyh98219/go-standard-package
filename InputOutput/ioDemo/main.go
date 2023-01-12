@@ -3,11 +3,13 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 func TestReader() {
@@ -106,6 +108,41 @@ func TestLimitedReader() {
 	}
 }
 
+func PipeWrite(writer *io.PipeWriter) {
+	data := []byte("Go语言中文网")
+	for i := 0; i < 3; i++ {
+		n, err := writer.Write(data)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Printf("写入字节%d\n", n)
+	}
+	writer.CloseWithError(errors.New("写入端已经关闭"))
+}
+
+func PipeRead(read *io.PipeReader) {
+	buf := make([]byte, 128)
+	for {
+		fmt.Println("接口端开始阻塞5秒...")
+		time.Sleep(5 * time.Second)
+		fmt.Println("接收端开始接收...")
+		n, err := read.Read(buf)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Printf("收到的字节:%d\n buf内容:%s\n", n, buf)
+	}
+}
+
+func TestPipeReadAndWrite() {
+	pipeRead, pipeWrite := io.Pipe()
+	go PipeWrite(pipeWrite)
+	go PipeRead(pipeRead)
+	time.Sleep(30 * time.Second)
+}
+
 func main() {
-	TestLimitedReader()
+	TestPipeReadAndWrite()
 }
